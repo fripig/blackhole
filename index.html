@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        [draggable] {
+            -moz-user-select: none;
+            -khtml-user-select: none;
+            -webkit-user-select: none;
+            user-select: none;
+            -khtml-user-drag: element;
+            -webkit-user-drag: element;
+            cursor: move;
+        }
+    </style>
+</head>
+
+<body>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.0/jquery.min.js"></script>
+    <script src="http://cdnjs.cloudflare.com/ajax/libs/fabric.js/1.7.22/fabric.min.js"></script>
+    <label for="upload" class="btn">upload pic</label>
+    <input type="file" name="upload" id="upload">
+    <input type="button" value="download" onclick="download()">
+    <div class="canvas-container">
+        <canvas id="c" width="600" height="500"></canvas>
+    </div>
+
+    <div class="furniture">
+        <img draggable="true" src="blackhole.png" id="blackhole" alt="" height="50" width="50">
+    </div>
+
+    <script id="main">
+        var canvas_height = 800;
+        var canvas_width = 1024;
+        function download() {
+            canvas = $("#c")[0];
+            window._canvas.deactivateAll().renderAll();
+            canvas.toBlob(function (blob) {
+                var link = document.createElement("a");
+                link.download = "image.png";
+                link.href = URL.createObjectURL(blob);
+                link.click()
+            }, 'image/png');
+        }
+        function setLoadFile() {
+            document.getElementById('upload').addEventListener("change", function (e) {
+                var file = e.target.files[0];
+                var reader = new FileReader();
+                reader.onload = function (f) {
+                    var data = f.target.result;
+                    fabric.Image.fromURL(data, function (img) {
+                        var oImg = img.set({ left: 0, top: 0, angle: 0, width: canvas_width, height: canvas_height }).scale(0.9);
+                        canvas = window._canvas;
+                        canvas.setBackgroundImage(oImg, canvas.renderAll.bind(canvas));
+                    });
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+        function initCanvas() {
+            $('.canvas-container').each(function (index) {
+
+                var canvasContainer = $(this)[0];
+                var canvasObject = $("canvas", this)[0];
+
+                // var url = $(this).data('floorplan');
+                var canvas = window._canvas = new fabric.Canvas(canvasObject);
+
+                canvas.setHeight(canvas_height);
+                canvas.setWidth(canvas_width);
+                fabric.Image.fromURL('449px-Han_Kuo-yu(cropped).jpg', function (img) {
+                    canvas_height = img.height;
+                    canvas_width = img.width;
+                    canvas.setHeight(img.height);
+                    canvas.setWidth(img.width);
+                    canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+                });
+
+
+                var imageOffsetX, imageOffsetY;
+
+                function handleDragStart(e) {
+                    [].forEach.call(images, function (img) {
+                        img.classList.remove('img_dragging');
+                    });
+                    this.classList.add('img_dragging');
+
+
+                    var imageOffset = $(this).offset();
+                    imageOffsetX = e.clientX - imageOffset.left;
+                    imageOffsetY = e.clientY - imageOffset.top;
+                }
+
+                function handleDragOver(e) {
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+                    e.dataTransfer.dropEffect = 'copy';
+                    return false;
+                }
+
+                function handleDragEnter(e) {
+                    this.classList.add('over');
+                }
+
+                function handleDragLeave(e) {
+                    this.classList.remove('over');
+                }
+
+                function handleDrop(e) {
+                    e = e || window.event;
+                    if (e.preventDefault) {
+                        e.preventDefault();
+                    }
+                    if (e.stopPropagation) {
+                        e.stopPropagation();
+                    }
+                    var img = document.querySelector('.furniture img.img_dragging');
+                    // console.log('event: ', e);
+
+                    var offset = $(canvasObject).offset();
+                    var y = e.clientY - (offset.top + imageOffsetY);
+                    var x = e.clientX - (offset.left + imageOffsetX);
+
+                    var newImage = new fabric.Image(img, {
+                        width: img.width,
+                        height: img.height,
+                        left: x,
+                        top: y
+                    });
+                    canvas.add(newImage);
+                    return false;
+                }
+
+                function handleDragEnd(e) {
+                    [].forEach.call(images, function (img) {
+                        img.classList.remove('img_dragging');
+                    });
+                }
+
+                var images = document.querySelectorAll('.furniture img');
+                [].forEach.call(images, function (img) {
+                    img.addEventListener('dragstart', handleDragStart, false);
+                    img.addEventListener('dragend', handleDragEnd, false);
+                });
+                canvasContainer.addEventListener('dragenter', handleDragEnter, false);
+                canvasContainer.addEventListener('dragover', handleDragOver, false);
+                canvasContainer.addEventListener('dragleave', handleDragLeave, false);
+                canvasContainer.addEventListener('drop', handleDrop, false);
+            });
+        }
+        initCanvas();
+        setLoadFile();
+    </script>
+圖片來源
+https://zh.m.wikipedia.org/wiki/File:Han_Kuo-yu(cropped).jpg
+</body>
+
+</html>
